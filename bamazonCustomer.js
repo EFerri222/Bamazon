@@ -1,6 +1,8 @@
 // Dependencies
 var mysql = require('mysql');
 var inquirer = require('inquirer');
+var chosenID;
+var chosenQuantity;
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -29,31 +31,16 @@ function askID() {
         .prompt({
             name: "id",
             type: "input",
-            message: "What is the ID number of the item you'd like to purchase? (Enter 1-10)"
+            message: "What is the product ID of the item you'd like to purchase? (Enter 1-10)"
         })
         .then(function(answer) {
-            if (answer.id === "1") {
-                console.log("You would like to buy item 1");
-            } else if (answer.id==="2") {
-                console.log("You would like to buy item 2");
-            } else if (answer.id==="3") {
-                console.log("You would like to buy item 3");
-            } else if (answer.id==="4") {
-                console.log("You would like to buy item 4");
-            } else if (answer.id==="5") {
-                console.log("You would like to buy item 5");
-            } else if (answer.id==="6") {
-                console.log("You would like to buy item 6");
-            } else if (answer.id==="7") {
-                console.log("You would like to buy item 7");
-            } else if (answer.id==="8") {
-                console.log("You would like to buy item 8");
-            } else if (answer.id==="9") {
-                console.log("You would like to buy item 9");
-            } else if (answer.id==="10") {
-                console.log("You would like to buy item 10");
+            if (answer.id > 10) {
+                console.log("Sorry, that number is not valid. Try Again.");
+                askID();
+            } else {
+                chosenID = answer.id;
+                askQuantity();
             }
-            askQuantity();
         });
 }
 
@@ -64,5 +51,31 @@ function askQuantity() {
             type: "input",
             message: "How many would you like to buy?"  
         })
-    connection.end();
+        .then(function(answer) {
+            chosenQuantity = answer.quantity;
+            connection.query("SELECT stock_quantity FROM products WHERE item_id = " + chosenID, function(err, res) {
+                if (err) throw err;
+                if (res[0].stock_quantity < chosenQuantity) {
+                    console.log("Insufficient quantity!");
+                    connection.end();
+                } else {
+                    connection.query(
+                        "UPDATE products SET ? WHERE ?",
+                        [
+                          {
+                            stock_quantity: res[0].stock_quantity - chosenQuantity
+                          },
+                          {
+                            item_id: chosenID
+                          }
+                        ]
+                      );
+                    connection.query("SELECT price FROM products WHERE item_id = " + chosenID, function(err, res) {
+                        if (err) throw err;
+                        console.log("The total price of your purchase is: " + chosenQuantity * res[0].price);
+                        connection.end();
+                    })
+                }
+            });
+        });
 }
