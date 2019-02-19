@@ -31,7 +31,7 @@ function askID() {
         .prompt({
             name: "id",
             type: "input",
-            message: "What is the product ID of the item you'd like to purchase? (Enter 1-10)"
+            message: "What is the product ID of the item you'd like to purchase?"
         })
         .then(function(answer) {
             if (answer.id > 10) {
@@ -56,8 +56,8 @@ function askQuantity() {
             connection.query("SELECT stock_quantity FROM products WHERE item_id = " + chosenID, function(err, res) {
                 if (err) throw err;
                 if (res[0].stock_quantity < chosenQuantity) {
-                    console.log("Insufficient quantity!");
-                    connection.end();
+                    console.log("Insufficient quantity! Try again.");
+                    askQuantity();
                 } else {
                     connection.query(
                         "UPDATE products SET ? WHERE ?",
